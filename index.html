@@ -51,6 +51,22 @@
     .icon-button:hover { color:var(--accent-dark); background:var(--soft); }
     .icon-button.remove:hover { color:var(--danger); background:var(--danger-soft); }
     .message p { white-space:pre-wrap; overflow-wrap:anywhere; margin:14px 0 0; line-height:1.72; font-size:15px; }
+    .comments { margin-top:18px; padding-top:15px; border-top:1px solid #ececf1; }
+    .comment-list { display:grid; gap:9px; }
+    .comment { padding:11px 13px; border-radius:12px; background:#f6f5fa; }
+    .comment-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .comment-author { color:#4f566a; font-size:12px; font-weight:800; }
+    .comment time { margin:0; font-size:11px; }
+    .comment .comment-text { margin:6px 0 0; font-size:13px; line-height:1.6; }
+    .comment-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; }
+    .comment-count { color:var(--muted); font-size:12px; }
+    .comment-toggle { border:0; border-radius:9px; padding:7px 11px; cursor:pointer; color:var(--accent-dark); background:var(--soft); font-size:12px; font-weight:800; }
+    .comment-toggle:hover { background:#e5e3ff; }
+    .comment-form { display:none; grid-template-columns:130px 1fr auto; align-items:end; gap:9px; padding:12px 0 0; }
+    .comment-form.open { display:grid; }
+    .comment-form input,.comment-form textarea { margin:0; min-height:42px; padding:10px 12px; font-size:13px; }
+    .comment-form textarea { height:42px; min-height:42px; max-height:120px; }
+    .comment-submit { min-height:42px; padding:0 14px; }
     .empty { padding:50px 18px; text-align:center; color:var(--muted); border:1px dashed #d9dce7; border-radius:18px; }
     .empty strong { display:block; color:#4e566b; margin-bottom:7px; }
     dialog { width:min(460px,calc(100% - 28px)); border:0; border-radius:20px; padding:0; color:var(--ink); box-shadow:0 28px 90px rgba(28,31,58,.28); }
@@ -67,7 +83,7 @@
     .toast { position:fixed; left:50%; bottom:26px; z-index:10; max-width:calc(100% - 32px); transform:translate(-50%,18px); opacity:0; pointer-events:none; color:white; background:#25283b; border-radius:11px; padding:10px 15px; font-size:13px; box-shadow:0 12px 35px rgba(20,22,40,.25); transition:.22s ease; }
     .toast.show { opacity:1; transform:translate(-50%,0); }
     @keyframes appear { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
-    @media (max-width:600px) { .shell { width:min(100% - 24px,940px); padding-top:38px; } form { grid-template-columns:1fr; padding:18px; gap:13px; } .message-field,.form-foot { grid-column:auto; } .form-foot { align-items:flex-end; } .hint { max-width:180px; line-height:1.5; } .board-header { margin-top:32px; align-items:flex-start; } .message { padding:18px; } .message-top { gap:8px; } }
+    @media (max-width:600px) { .shell { width:min(100% - 24px,940px); padding-top:38px; } form { grid-template-columns:1fr; padding:18px; gap:13px; } .message-field,.form-foot { grid-column:auto; } .form-foot { align-items:flex-end; } .hint { max-width:180px; line-height:1.5; } .board-header { margin-top:32px; align-items:flex-start; } .message { padding:18px; } .message-top { gap:8px; } .comment-form { grid-template-columns:1fr; } .comment-form textarea { height:72px; } }
   </style>
 </head>
 <body>
@@ -128,13 +144,14 @@
   <div class="toast" id="toast" role="status"></div>
   <script>
     const API_URL = 'https://hsvyoqcavaxyiabllnnh.supabase.co/rest/v1/messages';
+    const COMMENTS_URL = 'https://hsvyoqcavaxyiabllnnh.supabase.co/rest/v1/comments';
     const FUNCTION_URL = 'https://hsvyoqcavaxyiabllnnh.supabase.co/functions/v1/manage-messages';
     const API_KEY = 'sb_publishable_rAeVBzahh96lu4guvPb0mQ_At69HCfK';
     const headers = { apikey:API_KEY, 'Content-Type':'application/json' };
     const $ = selector => document.querySelector(selector);
     const form = $('#messageForm'), nickname = $('#nickname'), content = $('#content'), messages = $('#messages');
     const count = $('#count'), length = $('#length'), submitButton = $('#submitButton'), toast = $('#toast');
-    let items = [], managerPassword = '', editingId = null, pendingAction = null, toastTimer;
+    let items = [], comments = [], managerPassword = '', editingId = null, pendingAction = null, toastTimer;
     const formatDate = value => new Intl.DateTimeFormat('zh-CN', { dateStyle:'medium', timeStyle:'short' }).format(new Date(value));
 
     function notify(text) { toast.textContent = text; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2200); }
@@ -145,6 +162,7 @@
       messages.replaceChildren();
       if (!items.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.innerHTML = '<strong>还没有留言</strong><span>做第一个写下心情的人吧。</span>'; messages.append(empty); return; }
       items.forEach(item => {
+        const itemComments = comments.filter(comment => comment.message_id === item.id);
         const card = document.createElement('article'); card.className = 'message'; card.dataset.id = item.id;
         const top = document.createElement('div'); top.className = 'message-top';
         const meta = document.createElement('div');
@@ -156,11 +174,38 @@
         const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'icon-button remove'; remove.dataset.action = 'delete'; remove.textContent = '删除';
         tools.append(edit,remove); top.append(meta,tools);
         const text = document.createElement('p'); text.textContent = item.content;
-        card.append(top,text); messages.append(card);
+        const commentSection = document.createElement('div'); commentSection.className = 'comments';
+        const commentList = document.createElement('div'); commentList.className = 'comment-list';
+        itemComments.forEach(comment => {
+          const row = document.createElement('div'); row.className = 'comment';
+          const commentMeta = document.createElement('div'); commentMeta.className = 'comment-meta';
+          const commentAuthor = document.createElement('span'); commentAuthor.className = 'comment-author'; commentAuthor.textContent = comment.nickname;
+          const commentTime = document.createElement('time'); commentTime.dateTime = comment.created_at; commentTime.textContent = formatDate(comment.created_at);
+          const commentText = document.createElement('p'); commentText.className = 'comment-text'; commentText.textContent = comment.content;
+          commentMeta.append(commentAuthor,commentTime); row.append(commentMeta,commentText); commentList.append(row);
+        });
+        const commentActions = document.createElement('div'); commentActions.className = 'comment-actions';
+        const commentCount = document.createElement('span'); commentCount.className = 'comment-count'; commentCount.textContent = itemComments.length ? `${itemComments.length} 条评论` : '还没有评论';
+        const commentToggle = document.createElement('button'); commentToggle.type = 'button'; commentToggle.className = 'comment-toggle'; commentToggle.dataset.action = 'toggle-comment'; commentToggle.textContent = '评论';
+        commentActions.append(commentCount,commentToggle);
+        const commentForm = document.createElement('form'); commentForm.className = 'comment-form'; commentForm.dataset.commentForm = '';
+        const commentNickname = document.createElement('input'); commentNickname.name = 'nickname'; commentNickname.maxLength = 24; commentNickname.required = true; commentNickname.placeholder = '昵称'; commentNickname.setAttribute('aria-label','评论昵称');
+        const commentContent = document.createElement('textarea'); commentContent.name = 'content'; commentContent.maxLength = 300; commentContent.required = true; commentContent.placeholder = '写下你的评论…'; commentContent.setAttribute('aria-label','评论内容');
+        const commentSubmit = document.createElement('button'); commentSubmit.type = 'submit'; commentSubmit.className = 'primary comment-submit'; commentSubmit.textContent = '发布评论';
+        commentForm.append(commentNickname,commentContent,commentSubmit);
+        commentSection.append(commentList,commentActions,commentForm);
+        card.append(top,text,commentSection); messages.append(card);
       });
     }
     async function loadMessages() {
-      try { const response = await fetch(`${API_URL}?select=id,nickname,content,created_at&order=created_at.desc`, { headers }); if (!response.ok) throw new Error(); items = await response.json(); render(); }
+      try {
+        const [messageResponse,commentResponse] = await Promise.all([
+          fetch(`${API_URL}?select=id,nickname,content,created_at&order=created_at.desc`, { headers }),
+          fetch(`${COMMENTS_URL}?select=id,message_id,nickname,content,created_at&order=created_at.asc`, { headers })
+        ]);
+        if (!messageResponse.ok || !commentResponse.ok) throw new Error();
+        items = await messageResponse.json(); comments = await commentResponse.json(); render();
+      }
       catch { messages.innerHTML = '<div class="empty"><strong>留言暂时无法加载</strong><span>请稍后刷新页面重试。</span></div>'; }
     }
     async function manage(payload) {
@@ -185,10 +230,22 @@
     });
     $('#exitManager').addEventListener('click', () => { managerPassword = ''; document.body.classList.remove('managing'); notify('已退出管理模式'); });
     messages.addEventListener('click', event => {
-      const button = event.target.closest('[data-action]'); if (!button || !managerPassword) return;
+      const button = event.target.closest('[data-action]'); if (!button) return;
+      if (button.dataset.action === 'toggle-comment') { const commentForm = button.closest('.message').querySelector('[data-comment-form]'); commentForm.classList.toggle('open'); if (commentForm.classList.contains('open')) commentForm.querySelector('[name="nickname"]').focus(); return; }
+      if (!managerPassword) return;
       const item = items.find(entry => entry.id === button.closest('.message').dataset.id); if (!item) return;
       if (button.dataset.action === 'edit') { editingId = item.id; $('#editNickname').value = item.nickname; $('#editContent').value = item.content; $('#editError').textContent = ''; $('#editDialog').showModal(); }
       if (button.dataset.action === 'delete') { pendingAction = { action:'delete', id:item.id }; $('#confirmTitle').textContent = '删除这条留言？'; $('#confirmText').textContent = `“${item.nickname}”的留言将被永久删除。`; $('#confirmAction').textContent = '确认删除'; $('#confirmDialog').showModal(); }
+    });
+    messages.addEventListener('submit', async event => {
+      const commentForm = event.target.closest('[data-comment-form]'); if (!commentForm) return;
+      event.preventDefault(); const messageId = commentForm.closest('.message').dataset.id;
+      const name = commentForm.elements.nickname.value.trim(), text = commentForm.elements.content.value.trim(), button = commentForm.querySelector('button');
+      if (!name || !text) return; setBusy(button,true,'发布中…');
+      try {
+        const response = await fetch(COMMENTS_URL, { method:'POST', headers:{ ...headers, Prefer:'return=minimal' }, body:JSON.stringify({ message_id:messageId, nickname:name, content:text }) });
+        if (!response.ok) throw new Error(); await loadMessages(); notify('评论已发布');
+      } catch { notify('评论发布失败，请稍后重试'); } finally { setBusy(button,false); }
     });
     $('#editForm').addEventListener('submit', async event => {
       event.preventDefault(); const button = $('#saveEdit'), name = $('#editNickname').value.trim(), text = $('#editContent').value.trim(); if (!name || !text) return;
