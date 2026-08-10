@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="一个简洁的在线留言板" />
-  <title>留声板 · 留下此刻的话</title>
+  <title>留言板 · 留下此刻的话</title>
   <style>
     :root { --ink:#171b2c; --muted:#747b8e; --line:#e7e6ed; --paper:#fffdfa; --accent:#6258de; --accent-dark:#4c43c3; --soft:#f0efff; --danger:#ba4050; --danger-soft:#fff0f1; --success:#18795a; }
     * { box-sizing:border-box; }
@@ -74,11 +74,11 @@
   <main class="shell">
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">A SMALL PLACE TO SPEAK</p>
-      <h1 id="page-title">留声板</h1>
+      <h1 id="page-title">留言板</h1>
     </section>
     <section class="panel" aria-label="发布留言">
       <form id="messageForm">
-        <label>你的昵称<input id="nickname" maxlength="24" required placeholder="例如：小林" autocomplete="name" /></label>
+        <label>你的昵称<input id="nickname" maxlength="24" required autocomplete="name" /></label>
         <label class="message-field">想说的话<textarea id="content" maxlength="500" required placeholder="写下你的留言…"></textarea></label>
         <div class="form-foot"><span class="hint"><span id="length">0</span> / 500 字</span><button class="primary" id="submitButton" type="submit">发布留言</button></div>
       </form>
