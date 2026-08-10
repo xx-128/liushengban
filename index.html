@@ -56,30 +56,28 @@
       <form id="messageForm">
         <label>你的昵称<input id="nickname" maxlength="24" required placeholder="例如：小林" autocomplete="name" /></label>
         <label class="message-field">想说的话<textarea id="content" maxlength="500" required placeholder="写下你的留言…"></textarea></label>
-        <div class="form-foot"><span class="hint"><span id="length">0</span> / 500 字</span><button class="primary" type="submit">发布留言</button></div>
+        <div class="form-foot"><span class="hint"><span id="length">0</span> / 500 字 · <span id="status">所有访客可见</span></span><button class="primary" type="submit">发布留言</button></div>
       </form>
     </section>
     <section aria-labelledby="board-title">
-      <div class="board-header"><div><h2 id="board-title">大家的留言 <span class="count" id="count"></span></h2></div><button class="text-button" id="clearAll" type="button" hidden>清空全部</button></div>
+      <div class="board-header"><div><h2 id="board-title">大家的留言 <span class="count" id="count"></span></h2></div></div>
       <div id="messages" aria-live="polite"></div>
     </section>
   </main>
   <script>
-    const STORAGE_KEY = 'voice-board-messages-v1';
+    const API_URL = 'https://hsvyoqcavaxyiabllnnh.supabase.co/rest/v1/messages';
+    const API_KEY = 'sb_publishable_rAeVBzahh96lu4guvPb0mQ_At69HCfK';
     const form = document.querySelector('#messageForm');
     const nickname = document.querySelector('#nickname');
     const content = document.querySelector('#content');
     const messages = document.querySelector('#messages');
     const count = document.querySelector('#count');
-    const clearAll = document.querySelector('#clearAll');
     const length = document.querySelector('#length');
-    const getItems = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } };
-    const saveItems = items => localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    const status = document.querySelector('#status');
+    const headers = { apikey: API_KEY, Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' };
     const formatDate = value => new Intl.DateTimeFormat('zh-CN', { dateStyle:'medium', timeStyle:'short' }).format(new Date(value));
-    function render() {
-      const items = getItems();
+    function render(items) {
       count.textContent = items.length ? `(${items.length})` : '';
-      clearAll.hidden = items.length === 0;
       messages.replaceChildren();
       if (!items.length) {
         const empty = document.createElement('div'); empty.className = 'empty';
@@ -89,25 +87,34 @@
       items.forEach(item => {
         const card = document.createElement('article'); card.className = 'message';
         const top = document.createElement('div'); top.className = 'message-top';
-        const author = document.createElement('span'); author.className = 'author'; author.textContent = item.name;
+        const author = document.createElement('span'); author.className = 'author'; author.textContent = item.nickname;
         const meta = document.createElement('div');
-        const time = document.createElement('time'); time.dateTime = item.createdAt; time.textContent = formatDate(item.createdAt);
-        const remove = document.createElement('button'); remove.className = 'delete'; remove.type = 'button'; remove.textContent = '删除'; remove.setAttribute('aria-label', `删除 ${item.name} 的留言`);
-        remove.addEventListener('click', () => { if (confirm('确定删除这条留言吗？')) { saveItems(getItems().filter(entry => entry.id !== item.id)); render(); } });
-        meta.append(time, remove); top.append(author, meta);
-        const text = document.createElement('p'); text.textContent = item.text;
+        const time = document.createElement('time'); time.dateTime = item.created_at; time.textContent = formatDate(item.created_at);
+        meta.append(time); top.append(author, meta);
+        const text = document.createElement('p'); text.textContent = item.content;
         card.append(top, text); messages.append(card);
       });
     }
     content.addEventListener('input', () => length.textContent = content.value.length);
-    form.addEventListener('submit', event => {
+    async function loadMessages() {
+      status.textContent = '正在加载…';
+      try {
+        const response = await fetch(`${API_URL}?select=id,nickname,content,created_at&order=created_at.desc`, { headers });
+        if (!response.ok) throw new Error();
+        render(await response.json()); status.textContent = '所有访客可见';
+      } catch { status.textContent = '加载失败，请稍后重试'; }
+    }
+    form.addEventListener('submit', async event => {
       event.preventDefault(); const name = nickname.value.trim(); const text = content.value.trim();
       if (!name || !text) return;
-      saveItems([{ id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(), name, text, createdAt: new Date().toISOString() }, ...getItems()]);
-      content.value = ''; length.textContent = '0'; render(); content.focus();
+      status.textContent = '正在发布…';
+      try {
+        const response = await fetch(API_URL, { method: 'POST', headers: { ...headers, Prefer: 'return=minimal' }, body: JSON.stringify({ nickname: name, content: text }) });
+        if (!response.ok) throw new Error();
+        content.value = ''; length.textContent = '0'; await loadMessages(); content.focus();
+      } catch { status.textContent = '发布失败，请稍后重试'; }
     });
-    clearAll.addEventListener('click', () => { if (confirm('确定清空所有留言吗？此操作无法撤销。')) { localStorage.removeItem(STORAGE_KEY); render(); } });
-    render();
+    loadMessages();
   </script>
 </body>
 </html>
