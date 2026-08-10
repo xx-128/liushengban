@@ -40,7 +40,7 @@
     .writing-note { opacity:.65; transform:translateX(-3px); transition:opacity .25s,transform .25s,color .25s; }
     .panel.is-writing .writing-note { opacity:1; transform:none; color:var(--accent-dark); }
     .character-track { position:relative; height:3px; overflow:hidden; margin-top:8px; border-radius:99px; background:#e9e8f0; }
-    .character-progress { display:block; width:var(--progress,0%); height:100%; border-radius:inherit; background:linear-gradient(90deg,#7c71eb,#5aebc6); box-shadow:0 0 12px rgba(98,88,222,.35); transition:width .32s cubic-bezier(.22,1,.36,1),background .25s; }
+    .character-progress { display:block; width:100%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#7c71eb,#5aebc6); box-shadow:0 0 12px rgba(98,88,222,.35); transform:scaleX(var(--progress-scale,0)); transform-origin:left center; transition:transform .32s cubic-bezier(.22,1,.36,1),background .25s; }
     .panel.near-limit .character-progress { background:linear-gradient(90deg,#e58a57,#d9485f); }
     .primary,.secondary,.ghost,.danger,.icon-button { border:0; cursor:pointer; font-weight:800; transition:transform .2s cubic-bezier(.22,1,.36,1),background .2s,color .2s,opacity .2s,box-shadow .2s; }
     .primary { padding:12px 20px; border-radius:12px; color:white; background:var(--accent); box-shadow:0 8px 18px rgba(90,86,232,.22); }
@@ -247,7 +247,7 @@
     function closeDialog(id) { const dialog = document.getElementById(id); if (dialog.open) dialog.close(); }
     function updateComposerProgress() {
       const total = content.value.length, percent = Math.min(total / 500 * 100,100);
-      length.textContent = total; characterProgress.style.setProperty('--progress',`${percent}%`);
+      length.textContent = total; characterProgress.style.setProperty('--progress-scale',String(percent / 100));
       composerPanel.classList.toggle('is-writing',total > 0); composerPanel.classList.toggle('near-limit',total >= 420);
       writingNote.textContent = total ? (total >= 420 ? '快写满了' : '正在记录这一刻') : '等待你的想法';
     }
