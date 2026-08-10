@@ -18,18 +18,35 @@
     .hero { margin-bottom:34px; animation:hero-in .75s cubic-bezier(.22,1,.36,1) both; }
     .eyebrow { margin:0 0 10px; color:var(--accent); font-weight:800; font-size:13px; letter-spacing:.12em; animation:eyebrow-in .8s .08s cubic-bezier(.22,1,.36,1) both; }
     h1 { font-family:Georgia,"Times New Roman","Microsoft YaHei",serif; font-size:clamp(42px,7vw,70px); line-height:.98; letter-spacing:-.055em; margin:0; animation:title-in .85s .12s cubic-bezier(.16,1,.3,1) both; }
-    .panel { background:rgba(255,253,250,.92); border:1px solid rgba(255,255,255,.78); border-radius:24px; box-shadow:0 18px 60px rgba(37,42,88,.1); backdrop-filter:blur(12px); animation:panel-in .75s .18s cubic-bezier(.22,1,.36,1) both; transition:box-shadow .35s ease,transform .35s ease; }
-    .panel:focus-within { transform:translateY(-2px); box-shadow:0 24px 70px rgba(37,42,88,.14); }
-    form { padding:25px; display:grid; grid-template-columns:180px 1fr; gap:16px; }
+    .panel { --spot-x:50%; --spot-y:45%; position:relative; isolation:isolate; overflow:hidden; background:rgba(255,253,250,.92); border:1px solid rgba(255,255,255,.78); border-radius:24px; box-shadow:0 18px 60px rgba(37,42,88,.1); backdrop-filter:blur(12px); animation:panel-in .75s .18s cubic-bezier(.22,1,.36,1) both; transition:box-shadow .4s ease,transform .4s cubic-bezier(.22,1,.36,1); }
+    .panel::before { content:""; position:absolute; z-index:-1; inset:-45%; background:conic-gradient(from 120deg,transparent 0 34%,rgba(111,96,235,.08) 42%,rgba(125,218,197,.09) 49%,transparent 58% 100%); animation:composer-aurora 11s linear infinite; pointer-events:none; }
+    .panel::after { content:""; position:absolute; z-index:-1; inset:0; opacity:.14; background:radial-gradient(310px circle at var(--spot-x) var(--spot-y),rgba(107,92,235,.2),transparent 70%); transition:opacity .35s ease; pointer-events:none; }
+    .panel:hover::after,.panel:focus-within::after { opacity:1; }
+    .panel:focus-within { transform:translateY(-3px); box-shadow:0 26px 76px rgba(37,42,88,.15),0 0 0 1px rgba(98,88,222,.08); }
+    .panel.published { animation:composer-success .72s cubic-bezier(.22,1,.36,1); }
+    form { position:relative; z-index:1; padding:25px; display:grid; grid-template-columns:180px 1fr; gap:16px; }
     label { display:block; color:#475068; font-weight:700; font-size:13px; }
+    #messageForm label { transition:color .25s,transform .3s cubic-bezier(.22,1,.36,1); }
+    #messageForm label:focus-within { color:var(--accent-dark); transform:translateX(3px); }
     input,textarea { display:block; margin-top:8px; width:100%; border:1px solid var(--line); border-radius:12px; outline:none; padding:12px 14px; color:var(--ink); background:#fff; transition:border .25s,box-shadow .25s,transform .25s; }
     textarea { resize:vertical; min-height:112px; line-height:1.65; }
-    input:focus,textarea:focus { border-color:#918cf1; box-shadow:0 0 0 4px #edecff; }
+    input:focus,textarea:focus { border-color:#918cf1; box-shadow:0 0 0 4px #edecff; transform:translateY(-1px); }
+    #messageForm textarea { transition:min-height .4s cubic-bezier(.22,1,.36,1),border .25s,box-shadow .25s,transform .25s; }
+    #messageForm textarea:focus { min-height:132px; }
     .message-field { grid-column:1 / -1; }
     .form-foot { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:16px; }
-    .hint { color:var(--muted); font-size:12px; }
+    .composer-progress { width:min(260px,45vw); }
+    .hint { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; }
+    .writing-note { opacity:.65; transform:translateX(-3px); transition:opacity .25s,transform .25s,color .25s; }
+    .panel.is-writing .writing-note { opacity:1; transform:none; color:var(--accent-dark); }
+    .character-track { position:relative; height:3px; overflow:hidden; margin-top:8px; border-radius:99px; background:#e9e8f0; }
+    .character-progress { display:block; width:var(--progress,0%); height:100%; border-radius:inherit; background:linear-gradient(90deg,#7c71eb,#5aebc6); box-shadow:0 0 12px rgba(98,88,222,.35); transition:width .32s cubic-bezier(.22,1,.36,1),background .25s; }
+    .panel.near-limit .character-progress { background:linear-gradient(90deg,#e58a57,#d9485f); }
     .primary,.secondary,.ghost,.danger,.icon-button { border:0; cursor:pointer; font-weight:800; transition:transform .2s cubic-bezier(.22,1,.36,1),background .2s,color .2s,opacity .2s,box-shadow .2s; }
     .primary { padding:12px 20px; border-radius:12px; color:white; background:var(--accent); box-shadow:0 8px 18px rgba(90,86,232,.22); }
+    #submitButton { position:relative; overflow:hidden; min-width:108px; isolation:isolate; animation:button-breathe 3.4s ease-in-out infinite; }
+    #submitButton::before { content:""; position:absolute; z-index:-1; top:-30%; bottom:-30%; left:-55%; width:38%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); transform:skewX(-18deg); animation:button-shine 4.2s 1.2s ease-in-out infinite; }
+    #submitButton:hover { box-shadow:0 13px 28px rgba(90,86,232,.34); }
     .primary:hover { background:var(--accent-dark); transform:translateY(-1px); }
     button:active:not(:disabled) { transform:translateY(1px) scale(.98); }
     .primary:disabled,.danger:disabled { opacity:.55; cursor:not-allowed; transform:none; }
@@ -122,6 +139,10 @@
     @keyframes comment-in { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
     @keyframes float-one { to { transform:translate(42px,-34px) scale(1.08) } }
     @keyframes float-two { to { transform:translate(-38px,-24px) scale(.94) } }
+    @keyframes composer-aurora { to { transform:rotate(360deg) } }
+    @keyframes button-breathe { 0%,100% { box-shadow:0 8px 18px rgba(90,86,232,.22) } 50% { box-shadow:0 12px 30px rgba(90,86,232,.36) } }
+    @keyframes button-shine { 0%,58% { left:-55%; opacity:0 } 70% { opacity:1 } 88%,100% { left:125%; opacity:0 } }
+    @keyframes composer-success { 0% { transform:translateY(-3px) scale(1) } 42% { transform:translateY(-3px) scale(1.012); box-shadow:0 28px 88px rgba(31,148,112,.2),0 0 0 2px rgba(40,174,132,.14) } 100% { transform:none } }
     @media (max-width:600px) { .shell { width:min(100% - 24px,940px); padding-top:38px; } form { grid-template-columns:1fr; padding:18px; gap:13px; } .message-field,.form-foot { grid-column:auto; } .form-foot { align-items:flex-end; } .hint { max-width:180px; line-height:1.5; } .board-header { margin-top:32px; align-items:flex-start; } .filter-main { align-items:flex-start; flex-direction:column; gap:12px; } .filter-controls { width:100%; } .date-picker { flex:1; min-width:0; } .message { padding:18px; } .message-top { gap:8px; } .comment-form { grid-template-columns:1fr; } .comment-form.open { max-height:260px; } .comment-form textarea { height:72px; } }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
   </style>
@@ -132,11 +153,17 @@
       <p class="eyebrow">A SMALL PLACE TO SPEAK</p>
       <h1 id="page-title">留言板</h1>
     </section>
-    <section class="panel" aria-label="发布留言">
+    <section class="panel" id="composerPanel" aria-label="发布留言">
       <form id="messageForm">
         <label>你的昵称<input id="nickname" maxlength="24" required autocomplete="name" /></label>
         <label class="message-field">想说的话<textarea id="content" maxlength="500" required placeholder="写下你的留言…"></textarea></label>
-        <div class="form-foot"><span class="hint"><span id="length">0</span> / 500 字</span><button class="primary" id="submitButton" type="submit">发布留言</button></div>
+        <div class="form-foot">
+          <div class="composer-progress">
+            <span class="hint"><span><span id="length">0</span> / 500 字</span><span class="writing-note" id="writingNote">等待你的想法</span></span>
+            <div class="character-track" aria-hidden="true"><span class="character-progress" id="characterProgress"></span></div>
+          </div>
+          <button class="primary" id="submitButton" type="submit">发布留言</button>
+        </div>
       </form>
     </section>
     <section aria-labelledby="board-title">
@@ -208,6 +235,7 @@
     const $ = selector => document.querySelector(selector);
     const form = $('#messageForm'), nickname = $('#nickname'), content = $('#content'), messages = $('#messages');
     const count = $('#count'), length = $('#length'), submitButton = $('#submitButton'), toast = $('#toast');
+    const composerPanel = $('#composerPanel'), characterProgress = $('#characterProgress'), writingNote = $('#writingNote');
     const messageDate = $('#messageDate'), filterStatus = $('#filterStatus'), dateShortcuts = $('#dateShortcuts'), clearFilter = $('#clearFilter');
     let items = [], comments = [], activeDate = '', managerPassword = '', editingId = null, pendingAction = null, toastTimer;
     const formatDate = value => new Intl.DateTimeFormat('zh-CN', { dateStyle:'medium', timeStyle:'short' }).format(new Date(value));
@@ -217,6 +245,12 @@
     function notify(text) { toast.textContent = text; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2200); }
     function setBusy(button, busy, label) { button.disabled = busy; if (busy) { button.dataset.label = button.textContent; button.textContent = label; } else if (button.dataset.label) { button.textContent = button.dataset.label; delete button.dataset.label; } }
     function closeDialog(id) { const dialog = document.getElementById(id); if (dialog.open) dialog.close(); }
+    function updateComposerProgress() {
+      const total = content.value.length, percent = Math.min(total / 500 * 100,100);
+      length.textContent = total; characterProgress.style.setProperty('--progress',`${percent}%`);
+      composerPanel.classList.toggle('is-writing',total > 0); composerPanel.classList.toggle('near-limit',total >= 420);
+      writingNote.textContent = total ? (total >= 420 ? '快写满了' : '正在记录这一刻') : '等待你的想法';
+    }
     function renderDateShortcuts() {
       const days = new Map();
       items.forEach(item => { const key = toLocalDateKey(item.created_at); days.set(key,(days.get(key) || 0) + 1); });
@@ -294,7 +328,9 @@
       if (!response.ok) { const error = new Error(data.error || '操作失败，请稍后重试'); error.status = response.status; throw error; }
       return data;
     }
-    content.addEventListener('input', () => length.textContent = content.value.length);
+    content.addEventListener('input', updateComposerProgress);
+    composerPanel.addEventListener('pointermove', event => { const box = composerPanel.getBoundingClientRect(); composerPanel.style.setProperty('--spot-x',`${event.clientX - box.left}px`); composerPanel.style.setProperty('--spot-y',`${event.clientY - box.top}px`); });
+    composerPanel.addEventListener('pointerleave', () => { composerPanel.style.setProperty('--spot-x','50%'); composerPanel.style.setProperty('--spot-y','45%'); });
     messageDate.addEventListener('change', () => setDateFilter(messageDate.value));
     $('#todayFilter').addEventListener('click', () => { const now = new Date(), offset = now.getTimezoneOffset(); setDateFilter(new Date(now.getTime() - offset * 60000).toISOString().slice(0,10)); });
     clearFilter.addEventListener('click', () => setDateFilter(''));
@@ -302,7 +338,7 @@
     form.addEventListener('submit', async event => {
       event.preventDefault(); const name = nickname.value.trim(), text = content.value.trim(); if (!name || !text) return;
       setBusy(submitButton,true,'发布中…');
-      try { const response = await fetch(API_URL, { method:'POST', headers:{ ...headers, Prefer:'return=minimal' }, body:JSON.stringify({ nickname:name, content:text }) }); if (!response.ok) throw new Error(); content.value = ''; length.textContent = '0'; await loadMessages(); content.focus(); notify('留言已发布'); }
+      try { const response = await fetch(API_URL, { method:'POST', headers:{ ...headers, Prefer:'return=minimal' }, body:JSON.stringify({ nickname:name, content:text }) }); if (!response.ok) throw new Error(); content.value = ''; updateComposerProgress(); composerPanel.classList.add('published'); setTimeout(() => composerPanel.classList.remove('published'),760); await loadMessages(); content.focus(); notify('留言已发布'); }
       catch { notify('发布失败，请稍后重试'); } finally { setBusy(submitButton,false); }
     });
     $('#openManager').addEventListener('click', () => { $('#passwordError').textContent = ''; $('#managerPassword').value = ''; $('#passwordDialog').showModal(); setTimeout(() => $('#managerPassword').focus(), 0); });
